@@ -1,4 +1,12 @@
-from fastapi.testclient import TestClient # type: ignore
+from http import HTTPStatus
+
+from fastapi.testclient import TestClient  # type: ignore
+
 from learndo.app import app
 
-client = TestClient(app)
+
+def test_read_root_returns_ok():
+    client = TestClient(app)  # ARRANGE (ORGANIZAÇÃO)
+    client.get("/")  # ACT (AÇÃO)
+    response = client.get("/")  # ACT (AÇÃO)
+    assert response.status_code == HTTPStatus.OK  # ASSERT (AFIRMAÇÃO)
