@@ -1,0 +1,25 @@
+services:
+  learndo_database:
+    image: postgres
+    volumes:
+      - pgdata://var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: learndo_db
+    ports:
+      - "5432:5432"
+
+  learndo_app:
+    image: learndo_app
+    build: .
+    ##entrypoint: ./entrypoint.sh
+    ports:
+      - "8000:8000"
+    depends_on:
+      - learndo_database
+    environment:
+      DATABASE_URL: postgres+psycopg://app_user:app_password@learndo_database:5432/learndo_db
+volumes:
+  pgdata:
+    
