@@ -1,0 +1,22 @@
+services:
+  learndo_database:
+    image: postgres
+    container_name: learndo_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: learndo_db
+    ports:
+      - "5432:5432"
+  learndo_app:
+    build: .
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - learndo_database
+volumes:
+  postgres_data:

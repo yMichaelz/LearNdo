@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}LearnDo - Editar Curso{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Editar Curso</h1>
+{% if error %}
+    <p class="text-red-500 mb-4">{{ error }}</p>
+{% endif %}
+<form method="post" action="/cursos/{{ curso.id }}/edit" class="mb-6 space-y-4 max-w-lg bg-white p-6 rounded-lg shadow-md">
+    <input type="text" name="nome" value="{{ curso.nome }}" placeholder="Nome" required class="w-full p-2 border rounded-md">
+    <input type="text" name="descricao" value="{{ curso.descricao }}" placeholder="Descrição" required class="w-full p-2 border rounded-md">
+    <input type="number" name="carga_horaria" value="{{ curso.carga_horaria }}" placeholder="Carga Horária (horas)" required class="w-full p-2 border rounded-md">
+    <select name="professor_ids" multiple class="w-full p-2 border rounded-md">
+        {% for professor in professores %}
+            <option value="{{ professor.id }}" {% if professor in curso.professores %}selected{% endif %}>{{ professor.nome }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition duration-200">Salvar Alterações</button>
+</form>
+<a href="/cursos" class="text-blue-500 hover:underline">Voltar para a lista de cursos</a>
+{% endblock %}

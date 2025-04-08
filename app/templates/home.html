@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}LearnDo - Home{% endblock %}
+{% block content %}
+<div class="relative max-w-4xl mx-auto">
+    <!-- Carrossel -->
+    <div class="carousel-container relative overflow-hidden rounded-lg shadow-md">
+        <div class="carousel flex transition-transform duration-700 ease-in-out" id="carousel">
+            <div class="carousel-item w-full flex-shrink-0">
+                <img src="/static/images/education1.jpg" alt="Educação 1" class="w-full h-64 md:h-96 object-cover">
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
+                    <p class="text-lg">Aprendizado de Qualidade</p>
+                </div>
+            </div>
+            <div class="carousel-item w-full flex-shrink-0">
+                <img src="/static/images/education2.jpg" alt="Educação 2" class="w-full h-64 md:h-96 object-cover">
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
+                    <p class="text-lg">Ensino Personalizado</p>
+                </div>
+            </div>
+            <div class="carousel-item w-full flex-shrink-0">
+                <img src="/static/images/education3.jpg" alt="Educação 3" class="w-full h-64 md:h-96 object-cover">
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
+                    <p class="text-lg">Futuro Educacional</p>
+                </div>
+            </div>
+        </div>
+        <!-- Botões de Navegação -->
+        <button onclick="prevSlide()" class="absolute left-0 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-3 rounded-r-md hover:bg-gray-700 transition duration-200">❮</button>
+        <button onclick="nextSlide()" class="absolute right-0 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-3 rounded-l-md hover:bg-gray-700 transition duration-200">❯</button>
+        <!-- Indicadores -->
+        <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2" id="indicators"></div>
+    </div>
+    <!-- Slogan -->
+    <div class="text-center mt-6">
+        <h2 class="text-3xl font-bold text-gray-800">LearnDo - Gerenciamento Educacional</h2>
+        <p class="text-gray-600 mt-2">Organize e acompanhe o progresso educacional com facilidade.</p>
+    </div>
+    <!-- Links para Navegação -->
+    <div class="mt-8 text-center space-x-4">
+        <a href="/alunos" class="inline-block bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition duration-200">Gerenciar Alunos</a>
+        <a href="/professores" class="inline-block bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition duration-200">Gerenciar Professores</a>
+        <a href="/cursos" class="inline-block bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition duration-200">Gerenciar Cursos</a>
+    </div>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.carousel-item');
+    const totalSlides = slides.length;
+    const indicatorsContainer = document.getElementById('indicators');
+
+    // Criar indicadores
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('span');
+        dot.classList.add('w-3', 'h-3', 'bg-gray-400', 'rounded-full', 'cursor-pointer', 'transition', 'duration-200');
+        dot.addEventListener('click', () => goToSlide(i));
+        if (i === 0) dot.classList.add('bg-gray-800');
+        indicatorsContainer.appendChild(dot);
+    }
+
+    const indicators = document.querySelectorAll('#indicators span');
+
+    function updateIndicators() {
+        indicators.forEach((dot, index) => {
+            dot.classList.toggle('bg-gray-800', index === currentSlide);
+            dot.classList.toggle('bg-gray-400', index !== currentSlide);
+        });
+    }
+
+    function showSlide(index) {
+        const carousel = document.getElementById('carousel');
+        carousel.style.transform = `translateX(-${index * 100}%)`;
+        currentSlide = index;
+        updateIndicators();
+    }
+
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        showSlide(currentSlide);
+    }
+
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+        showSlide(currentSlide);
+    }
+
+    function goToSlide(index) {
+        showSlide(index);
+    }
+
+    // Auto-rodar a cada 5 segundos
+    let autoSlide = setInterval(nextSlide, 5000);
+
+    // Pausar o auto-rodar ao interagir
+    document.querySelector('.carousel-container').addEventListener('mouseenter', () => clearInterval(autoSlide));
+    document.querySelector('.carousel-container').addEventListener('mouseleave', () => autoSlide = setInterval(nextSlide, 5000));
+
+    // Inicializar
+    showSlide(currentSlide);
+</script>
+{% endblock %}

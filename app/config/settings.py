@@ -1,0 +1,1 @@
+DATABASE_URL = "postgresql://app_user:app_password@learndo_db:5432/learndo_db"
