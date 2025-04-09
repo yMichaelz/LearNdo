@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   learndo_database:
     image: postgres:13
@@ -13,9 +12,6 @@ services:
       - "5432:5432"
   learndo_app:
     build: .
-    volumes:
-      - .:/code
-      - ./static:/code/static
     ports:
       - "8000:8000"
     depends_on:

@@ -1,8 +1,14 @@
 FROM python:3.11-slim
+
 WORKDIR /code
+
 COPY requirements.txt .
-RUN apt-get update && apt-get install -y netcat-openbsd && pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 COPY . .
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
-CMD ["./entrypoint.sh"]
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

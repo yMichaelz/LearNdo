@@ -1,24 +1,27 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-import logging
+from tenacity import retry, stop_after_attempt, wait_fixed, Retrying
 
-logger = logging.getLogger(__name__)
+# URL do banco de dados (pode vir de .env via python-dotenv ou environment)
+DATABASE_URL = "postgresql://app_user:app_password@learndo_db:5432/learndo_db"
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://app_user:app_password@learndo_db:5432/learndo_db")
+# Função com retry para criar o engine
+@retry(stop=stop_after_attempt(10), wait=wait_fixed(2))
+def get_db_engine():
+    try:
+        engine = create_engine(DATABASE_URL)
+        # Testa a conexão
+        with engine.connect():
+            pass
+        return engine
+    except Exception as e:
+        print(f"Erro ao conectar ao banco, tentando novamente: {e}")
+        raise
 
-engine = create_engine(DATABASE_URL)
+engine = get_db_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-def test_connection():
-    try:
-        with engine.connect() as connection:
-            logger.info("Conexão com o banco de dados estabelecida com sucesso!")
-    except Exception as e:
-        logger.error(f"Falha ao conectar ao banco de dados: {str(e)}")
-        raise
 
 def get_db():
     db = SessionLocal()
