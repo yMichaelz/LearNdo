@@ -8,4 +8,5 @@ class Professor(Base):
     nome = Column(String, nullable=False)
     idade = Column(Integer, nullable=False)
     especialidade = Column(String, nullable=False)
+    imagem = Column(String, nullable=True)  # Caminho da imagem
     cursos = relationship("Curso", secondary="curso_professor", back_populates="professores")

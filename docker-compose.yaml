@@ -1,6 +1,7 @@
+version: '3.8'
 services:
   learndo_database:
-    image: postgres
+    image: postgres:13
     container_name: learndo_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -14,9 +15,12 @@ services:
     build: .
     volumes:
       - .:/code
+      - ./static:/code/static
     ports:
       - "8000:8000"
     depends_on:
       - learndo_database
+    environment:
+      - DATABASE_URL=postgresql://app_user:app_password@learndo_db:5432/learndo_db
 volumes:
   postgres_data:

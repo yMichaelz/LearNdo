@@ -1,11 +1,9 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
+from typing import Optional
 
 class AlunoCreate(BaseModel):
-    nome: str = Field(..., min_length=1)
-    email: EmailStr
-    idade: int = Field(..., ge=1)
-    cpf: str = Field(..., min_length=11, max_length=14)
-    curso_id: int | None = None
-
-    class Config:
-        from_attributes = True  # Substitui orm_mode
+    nome: str
+    email: str
+    idade: int
+    cpf: str
+    curso_id: Optional[int] = None

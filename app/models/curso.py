@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database.session import Base
 
-# Tabela associativa para cursos e professores
 curso_professor = Table(
     'curso_professor',
     Base.metadata,
@@ -16,5 +15,6 @@ class Curso(Base):
     nome = Column(String, nullable=False)
     descricao = Column(String, nullable=False)
     carga_horaria = Column(Integer, nullable=False)
+    imagem = Column(String, nullable=True)  # Caminho da imagem
     professores = relationship("Professor", secondary=curso_professor, back_populates="cursos")
     alunos = relationship("Aluno", backref="curso")

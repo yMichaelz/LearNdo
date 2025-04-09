@@ -3,36 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LearnDo{% endblock %}</title>
+    <title>{% block title %}{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'MinhaFonte';
+            src: url('/static/fonts/MinhaFonte.ttf') format('truetype');
+        }
+        body {
+            font-family: 'MinhaFonte', 'Roboto', sans-serif;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
-    <header class="bg-blue-600 text-white p-4 shadow-md">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <!-- Placeholder para a logo -->
-                <img src="/static/images/logo.png" alt="Logo LearnDo" class="h-10 w-10" onerror="this.src='https://via.placeholder.com/40';">
-                <h1 class="text-xl font-bold">LearnDo</h1>
-            </div>
-            <nav class="space-x-4">
-                {% if request.cookies.get('username') %}
-                    <a href="/alunos" class="hover:underline">Alunos</a>
-                    <a href="/professores" class="hover:underline">Professores</a>
-                    <a href="/cursos" class="hover:underline">Cursos</a>
-                    <a href="/logout" class="hover:underline">Sair</a>
-                {% else %}
-                    <a href="/login" class="hover:underline">Login</a>
-                    <a href="/register" class="hover:underline">Cadastro</a>
-                {% endif %}
-            </nav>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <nav class="bg-gradient-to-r from-orange-400 to-red-500 p-4 flex items-center justify-between">
+        <a href="/home" class="absolute left-4">
+            <img src="/static/images/logo.png" alt="LearnDo Logo" class="h-14 rounded-lg">
+        </a>
+        <div class="flex space-x-4 mx-auto">
+            <a href="/alunos" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-orange-500 hover:text-white transition duration-200">Alunos</a>
+            <a href="/professores" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-orange-500 hover:text-white transition duration-200">Professores</a>
+            <a href="/cursos" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-orange-500 hover:text-white transition duration-200">Cursos</a>
         </div>
-    </header>
-    <main class="flex-grow container mx-auto p-6">
+        <a href="/logout" class="absolute right-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200">Logout</a>
+    </nav>
+    <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
-    <footer class="bg-gray-800 text-white p-4 text-center">
-        <p>&copy; 2025 LearnDo. Todos os direitos reservados.</p>
-    </footer>
 </body>
 </html>

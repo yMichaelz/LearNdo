@@ -9,3 +9,4 @@ class Aluno(Base):
     idade = Column(Integer, nullable=False)
     cpf = Column(String, unique=True, nullable=False)
     curso_id = Column(Integer, ForeignKey("cursos.id"), nullable=True)
+    imagem = Column(String, nullable=True)  # Caminho da imagem

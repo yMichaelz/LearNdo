@@ -1,9 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 class ProfessorCreate(BaseModel):
-    nome: str = Field(..., min_length=1)
-    idade: int = Field(..., ge=1)
-    especialidade: str = Field(..., min_length=1)
-
-    class Config:
-        from_attributes = True
+    nome: str
+    idade: int
+    especialidade: str

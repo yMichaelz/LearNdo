@@ -1,10 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from typing import List
 
 class CursoCreate(BaseModel):
-    nome: str = Field(..., min_length=1)
-    descricao: str = Field(..., min_length=1)
-    carga_horaria: int = Field(..., ge=1)
-    professor_ids: list[int] = []  # Lista de IDs de professores
-
-    class Config:
-        from_attributes = True
+    nome: str
+    descricao: str
+    carga_horaria: int
+    professor_ids: List[int] = []

@@ -1,118 +1,103 @@
-from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Request, Form, Depends, HTTPException, UploadFile, File
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from app.database.session import get_db
-from app.models.curso import Curso, curso_professor
+from app.models.curso import Curso
 from app.models.professor import Professor
 from app.auth import get_current_user
-from app.schemas.curso import CursoCreate
-import logging
+import os
 
 router = APIRouter(prefix="/cursos", tags=["cursos"])
 templates = Jinja2Templates(directory="app/templates")
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
-@router.get("")
+@router.get("/", response_class=HTMLResponse)
 def listar_cursos(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    if not user:
-        return templates.TemplateResponse("unauthenticated.html", {"request": request})
-    try:
-        cursos = db.query(Curso).all()
-        professores = db.query(Professor).all()
-        return templates.TemplateResponse("cursos.html", {"request": request, "cursos": cursos, "professores": professores})
-    except Exception as e:
-        logger.error(f"Erro ao listar cursos: {str(e)}")
-        return templates.TemplateResponse("cursos.html", {"request": request, "error": f"Erro ao listar cursos: {str(e)}"})
+    cursos = db.query(Curso).all()
+    return templates.TemplateResponse("cursos.html", {"request": request, "cursos": cursos})
 
-@router.post("")
-def criar_curso(
-    nome: str = Form(...), 
-    descricao: str = Form(...), 
-    carga_horaria: int = Form(...), 
-    professor_ids: list[int] = Form(default=[]),  # Lista de IDs de professores
-    db: Session = Depends(get_db), 
+@router.get("/gerenciar", response_class=HTMLResponse)
+def gerenciar_cursos(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    cursos = db.query(Curso).all()
+    professores = db.query(Professor).all()
+    return templates.TemplateResponse("gerenciar_cursos.html", {"request": request, "cursos": cursos, "professores": professores})
+
+@router.post("/gerenciar", response_class=HTMLResponse)
+async def adicionar_curso(
+    request: Request,
+    nome: str = Form(...),
+    descricao: str = Form(...),
+    carga_horaria: int = Form(...),
+    professor_ids: list[int] = Form(default=[]),
+    imagem: UploadFile = File(None),  # Alterado para UploadFile
+    db: Session = Depends(get_db),
     user=Depends(get_current_user)
 ):
-    if not user:
-        return templates.TemplateResponse("unauthenticated.html", {"request": request})
-    try:
-        logger.info(f"Tentando criar curso: {nome}")
-        curso_data = CursoCreate(nome=nome, descricao=descricao, carga_horaria=carga_horaria, professor_ids=professor_ids)
-        curso = Curso(nome=curso_data.nome, descricao=curso_data.descricao, carga_horaria=curso_data.carga_horaria)
-        db.add(curso)
-        db.flush()  # Gera o ID do curso antes de associar professores
-        if professor_ids:
-            for pid in professor_ids:
-                db.execute(curso_professor.insert().values(curso_id=curso.id, professor_id=pid))
-        db.commit()
-        logger.info(f"Curso {nome} criado com sucesso")
-        return RedirectResponse(url="/cursos", status_code=302)
-    except IntegrityError:
-        db.rollback()
-        cursos = db.query(Curso).all()
-        professores = db.query(Professor).all()
-        return templates.TemplateResponse("cursos.html", {"request": request, "cursos": cursos, "professores": professores, "error": "Curso já existe."})
-    except ValueError as e:
-        db.rollback()
-        cursos = db.query(Curso).all()
-        professores = db.query(Professor).all()
-        return templates.TemplateResponse("cursos.html", {"request": request, "cursos": cursos, "professores": professores, "error": str(e)})
+    imagem_path = None
+    if imagem and imagem.filename:  # Verifica se há um arquivo e se ele tem um nome
+        if not os.path.exists("app/static/uploads"):
+            os.makedirs("app/static/uploads")
+        imagem_path = f"uploads/{imagem.filename}"
+        with open(f"app/static/{imagem_path}", "wb") as f:
+            f.write(await imagem.read())  # Lê o conteúdo do arquivo de forma assíncrona
 
-@router.get("/{curso_id}/edit")
+    curso = Curso(nome=nome, descricao=descricao, carga_horaria=carga_horaria, imagem=imagem_path)
+    db.add(curso)
+    db.commit()
+    db.refresh(curso)
+
+    if professor_ids:
+        professores = db.query(Professor).filter(Professor.id.in_(professor_ids)).all()
+        curso.professores.extend(professores)
+        db.commit()
+
+    return RedirectResponse(url="/cursos/gerenciar", status_code=303)
+
+@router.get("/{curso_id}/edit", response_class=HTMLResponse)
 def editar_curso(curso_id: int, request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    if not user:
-        return templates.TemplateResponse("unauthenticated.html", {"request": request})
     curso = db.query(Curso).filter(Curso.id == curso_id).first()
     if not curso:
-        return RedirectResponse(url="/cursos", status_code=302)
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
     professores = db.query(Professor).all()
     return templates.TemplateResponse("edit_curso.html", {"request": request, "curso": curso, "professores": professores})
 
-@router.post("/{curso_id}/edit")
-def atualizar_curso(
+@router.post("/{curso_id}/edit", response_class=HTMLResponse)
+async def atualizar_curso(
     curso_id: int,
-    nome: str = Form(...), 
-    descricao: str = Form(...), 
-    carga_horaria: int = Form(...), 
-    professor_ids: list[int] = Form(default=[]), 
-    db: Session = Depends(get_db), 
+    request: Request,
+    nome: str = Form(...),
+    descricao: str = Form(...),
+    carga_horaria: int = Form(...),
+    professor_ids: list[int] = Form(default=[]),
+    imagem: UploadFile = File(None),  # Alterado para UploadFile
+    db: Session = Depends(get_db),
     user=Depends(get_current_user)
 ):
-    if not user:
-        return templates.TemplateResponse("unauthenticated.html", {"request": request})
-    try:
-        curso = db.query(Curso).filter(Curso.id == curso_id).first()
-        if not curso:
-            return RedirectResponse(url="/cursos", status_code=302)
-        curso_data = CursoCreate(nome=nome, descricao=descricao, carga_horaria=carga_horaria, professor_ids=professor_ids)
-        curso.nome = curso_data.nome
-        curso.descricao = curso_data.descricao
-        curso.carga_horaria = curso_data.carga_horaria
-        # Atualiza os professores
-        db.execute(curso_professor.delete().where(curso_professor.c.curso_id == curso.id))
-        if professor_ids:
-            for pid in professor_ids:
-                db.execute(curso_professor.insert().values(curso_id=curso.id, professor_id=pid))
-        db.commit()
-        return RedirectResponse(url="/cursos", status_code=302)
-    except IntegrityError:
-        db.rollback()
-        professores = db.query(Professor).all()
-        return templates.TemplateResponse("edit_curso.html", {"request": request, "curso": curso, "professores": professores, "error": "Curso já existe."})
-    except ValueError as e:
-        db.rollback()
-        professores = db.query(Professor).all()
-        return templates.TemplateResponse("edit_curso.html", {"request": request, "curso": curso, "professores": professores, "error": str(e)})
-
-@router.post("/{curso_id}/delete")
-def deletar_curso(curso_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    if not user:
-        return templates.TemplateResponse("unauthenticated.html", {"request": request})
     curso = db.query(Curso).filter(Curso.id == curso_id).first()
-    if curso:
-        db.delete(curso)
-        db.commit()
-    return RedirectResponse(url="/cursos", status_code=302)
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+
+    if imagem and imagem.filename:  # Verifica se há um arquivo e se ele tem um nome
+        if not os.path.exists("app/static/uploads"):
+            os.makedirs("app/static/uploads")
+        imagem_path = f"uploads/{imagem.filename}"
+        with open(f"app/static/{imagem_path}", "wb") as f:
+            f.write(await imagem.read())  # Lê o conteúdo do arquivo de forma assíncrona
+        curso.imagem = imagem_path
+
+    curso.nome = nome
+    curso.descricao = descricao
+    curso.carga_horaria = carga_horaria
+    curso.professores = db.query(Professor).filter(Professor.id.in_(professor_ids)).all()
+    db.commit()
+
+    return RedirectResponse(url="/cursos/gerenciar", status_code=303)
+
+@router.post("/{curso_id}/delete", response_class=HTMLResponse)
+def deletar_curso(curso_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    curso = db.query(Curso).filter(Curso.id == curso_id).first()
+    if not curso:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    db.delete(curso)
+    db.commit()
+    return RedirectResponse(url="/cursos/gerenciar", status_code=303)
