@@ -1,105 +1,101 @@
-from fastapi import APIRouter, Request, Form, Depends, File, UploadFile
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, Request, Depends, UploadFile, File, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from app.database.session import get_db
 from app.models.professor import Professor
 from app.auth import get_current_user
-from app.schemas.professor import ProfessorCreate
-import logging
-import shutil
+import os
 
-router = APIRouter(prefix="/professores", tags=["professores"])
+router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
-@router.get("", response_class=HTMLResponse)
-def listar_professores(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+@router.get("/professores", response_class=HTMLResponse)
+def get_professores(request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
     professores = db.query(Professor).all()
     return templates.TemplateResponse("professores.html", {"request": request, "professores": professores})
 
-@router.get("/gerenciar", response_class=HTMLResponse)
-def gerenciar_professores(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+@router.get("/professores/gerenciar", response_class=HTMLResponse)
+def gerenciar_professores(request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
     professores = db.query(Professor).all()
     return templates.TemplateResponse("gerenciar_professores.html", {"request": request, "professores": professores})
 
-@router.post("/gerenciar", response_class=HTMLResponse)
-async def criar_professor(
+@router.post("/professores/gerenciar", response_class=HTMLResponse)
+async def adicionar_professor(
     request: Request,
-    nome: str = Form(...), 
-    idade: int = Form(...), 
-    especialidade: str = Form(...), 
-    imagem: UploadFile = File(default=None),
-    db: Session = Depends(get_db), 
-    user=Depends(get_current_user)
+    nome: str = Form(...),
+    idade: int = Form(...),
+    especialidade: str = Form(...),
+    imagem: UploadFile = File(None),  # Imagem é opcional
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
-    try:
-        imagem_path = None
-        if imagem:
-            imagem_path = f"/code/static/uploads/professor_{nome}_{imagem.filename}"
-            with open(imagem_path, "wb") as buffer:
-                shutil.copyfileobj(imagem.file, buffer)
-            imagem_path = imagem_path.replace("/code/static/", "")
-        professor_data = ProfessorCreate(nome=nome, idade=idade, especialidade=especialidade)
-        professor = Professor(**professor_data.dict(), imagem=imagem_path)
-        db.add(professor)
-        db.commit()
-        return RedirectResponse(url="/professores/gerenciar", status_code=302)
-    except IntegrityError:
-        db.rollback()
-        professores = db.query(Professor).all()
-        return templates.TemplateResponse("gerenciar_professores.html", {"request": request, "professores": professores, "error": "Professor já existe."})
+    
+    imagem_path = None
+    if imagem and imagem.filename:  # Verifica se uma imagem foi enviada
+        imagem_path = f"images/{imagem.filename}"
+        with open(f"/code/static/{imagem_path}", "wb") as f:
+            f.write(await imagem.read())
+    
+    professor = Professor(nome=nome, idade=idade, especialidade=especialidade, imagem=imagem_path)
+    db.add(professor)
+    db.commit()
+    return RedirectResponse(url="/professores/gerenciar", status_code=303)
 
-@router.get("/{professor_id}/edit", response_class=HTMLResponse)
-def editar_professor(professor_id: int, request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+@router.get("/professores/{professor_id}/edit", response_class=HTMLResponse)
+def edit_professor(request: Request, professor_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
     return templates.TemplateResponse("edit_professor.html", {"request": request, "professor": professor})
 
-@router.post("/{professor_id}/edit", response_class=HTMLResponse)
-async def atualizar_professor(
-    professor_id: int,
+@router.post("/professores/{professor_id}/edit", response_class=HTMLResponse)
+async def update_professor(
     request: Request,
-    nome: str = Form(...), 
-    idade: int = Form(...), 
-    especialidade: str = Form(...), 
-    imagem: UploadFile = File(default=None),
-    db: Session = Depends(get_db), 
-    user=Depends(get_current_user)
+    professor_id: int,
+    nome: str = Form(...),
+    idade: int = Form(...),
+    especialidade: str = Form(...),
+    imagem: UploadFile = File(None),
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
+    
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
-    try:
-        if imagem:
-            imagem_path = f"/code/static/uploads/professor_{nome}_{imagem.filename}"
-            with open(imagem_path, "wb") as buffer:
-                shutil.copyfileobj(imagem.file, buffer)
-            professor.imagem = imagem_path.replace("/code/static/", "")
-        professor.nome = nome
-        professor.idade = idade
-        professor.especialidade = especialidade
-        db.commit()
-        return RedirectResponse(url="/professores/gerenciar", status_code=302)
-    except IntegrityError:
-        db.rollback()
-        return templates.TemplateResponse("edit_professor.html", {"request": request, "professor": professor, "error": "Professor já existe."})
+    professor.nome = nome
+    professor.idade = idade
+    professor.especialidade = especialidade
+    
+    if imagem and imagem.filename:  # Verifica se uma nova imagem foi enviada
+        # Garante que o diretório existe
+        os.makedirs("/code/static/images", exist_ok=True)
+        # Define o caminho completo para salvar a imagem
+        imagem_path = f"images/{professor_id}_{imagem.filename}"  # Adiciona o ID para evitar conflitos
+        with open(f"/code/static/{imagem_path}", "wb") as f:
+            f.write(await imagem.read())
+        # Remove a imagem antiga, se existir
+        if professor.imagem and os.path.exists(f"/code/static/{professor.imagem}"):
+            os.remove(f"/code/static/{professor.imagem}")
+        professor.imagem = imagem_path
+    
+    db.commit()
+    return RedirectResponse(url="/professores/gerenciar", status_code=303)
 
-@router.post("/{professor_id}/delete", response_class=HTMLResponse)
-def deletar_professor(professor_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+@router.post("/professores/{professor_id}/delete", response_class=HTMLResponse)
+def delete_professor(request: Request, professor_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
-    if professor:
-        db.delete(professor)
-        db.commit()
-    return RedirectResponse(url="/professores/gerenciar", status_code=302)
+    if professor.imagem and os.path.exists(f"/code/static/{professor.imagem}"):
+        os.remove(f"/code/static/{professor.imagem}")
+    db.delete(professor)
+    db.commit()
+    return RedirectResponse(url="/professores/gerenciar", status_code=303)

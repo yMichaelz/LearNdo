@@ -10,19 +10,25 @@ from app.models.professor import Professor
 from app.models.curso import Curso
 from sqlalchemy.orm import Session
 
+# Inicialização do aplicativo FastAPI
 app = FastAPI()
 
+# Montagem da pasta de arquivos estáticos
 app.mount("/static", StaticFiles(directory="/code/static"), name="static")
 
+# Inclusão das rotas definidas nos módulos
 app.include_router(alunos.router)
 app.include_router(professores.router)
 app.include_router(cursos.router)
 app.include_router(auth.router)
 
+# Configuração do Jinja2 para templates
 templates = Jinja2Templates(directory="app/templates")
 
+# Criação das tabelas no banco de dados (executado na inicialização)
 Base.metadata.create_all(bind=engine)
 
+# Rota raiz (página inicial)
 @app.get("/", response_class=HTMLResponse)
 def root():
     return """
@@ -59,20 +65,25 @@ def root():
     </html>
     """
 
+# Rota da página home (após login)
 @app.get("/home", response_class=HTMLResponse)
 def home(request: Request, user=Depends(get_current_user)):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
     return templates.TemplateResponse("home.html", {"request": request})
 
+# Rota do dashboard
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         return templates.TemplateResponse("unauthenticated.html", {"request": request})
     
+    # Contagem total de alunos, professores e cursos
     total_alunos = db.query(Aluno).count()
     total_professores = db.query(Professor).count()
     total_cursos = db.query(Curso).count()
+    
+    # Últimos 5 alunos cadastrados
     ultimos_alunos = db.query(Aluno).order_by(Aluno.id.desc()).limit(5).all()
     
     return templates.TemplateResponse("dashboard.html", {

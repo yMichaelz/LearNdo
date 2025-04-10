@@ -13,23 +13,52 @@
         }
         body {
             font-family: 'MinhaFonte', 'Roboto', sans-serif;
+            background-color: #fff;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath d='M10 10h10v10H10z' fill='%23D1D5DB' opacity='0.2'/%3E%3Cpath d='M40 40h10v10H40z' fill='%23D1D5DB' opacity='0.2'/%3E%3Cpath d='M25 15l5 5-5 5' stroke='%23D1D5DB' stroke-width='2' opacity='0.2'/%3E%3Cpath d='M45 25l-5 5-5-5' stroke='%23D1D5DB' stroke-width='2' opacity='0.2'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 60px 60px;
+        }
+        .upload-container {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-container:hover {
+            background-color: #f1f5f9;
+        }
+        .upload-container input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
-    <nav class="bg-gradient-to-r from-orange-400 to-red-500 p-4 flex items-center justify-between">
-        <a href="/home" class="absolute left-4">
-            <img src="/static/images/logo.png" alt="LearnDo Logo" class="h-14 rounded-lg">
-        </a>
-        <div class="flex space-x-4 mx-auto">
-            <a href="/alunos" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-orange-500 hover:text-white transition duration-200">Alunos</a>
-            <a href="/professores" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-orange-500 hover:text-white transition duration-200">Professores</a>
-            <a href="/cursos" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-orange-500 hover:text-white transition duration-200">Cursos</a>
+<body class="min-h-screen flex flex-col">
+    <nav class="bg-gradient-to-r from-orange-400 to-red-500 p-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-2">
+            <a href="/home">
+                <img src="/static/images/logo.png" alt="LearnDo Logo" class="h-12 rounded-lg">
+            </a>
+            <a href="/home" class="text-white text-2xl font-bold">LearnDo</a>
         </div>
-        <a href="/logout" class="absolute right-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200">Logout</a>
+        <div class="flex space-x-4">
+            <a href="/home" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-orange-500 transition duration-200 shadow">Home</a>
+            <a href="/dashboard" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-orange-500 transition duration-200 shadow">Dashboard</a>
+            <a href="/alunos" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-orange-500 transition duration-200 shadow">Alunos</a>
+            <a href="/professores" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-orange-500 transition duration-200 shadow">Professores</a>
+            <a href="/cursos" class="bg-white text-orange-400 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-orange-500 transition duration-200 shadow">Cursos</a>
+        </div>
+        <a href="/logout" class="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-900 transition duration-200 shadow">Logout</a>
     </nav>
     <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
+    <footer class="bg-gray-800 text-white p-4 text-center">
+        <p>© 2025 LearnDo - Todos os direitos reservados</p>
+        <p class="text-sm">Desenvolvido para facilitar a gestão educacional</p>
+    </footer>
 </body>
 </html>
